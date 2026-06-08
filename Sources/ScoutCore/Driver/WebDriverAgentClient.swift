@@ -61,7 +61,18 @@ public actor WebDriverAgentClient {
     // MARK: - Ações
 
     public func tap(session id: String, x: Double, y: Double) async throws {
-        _ = try await post("session/\(id)/wda/tap/0", body: ["x": x, "y": y])
+        // W3C Actions API. O endpoint legado /wda/tap/0 sumiu em WDA recente (404).
+        let body: [String: Any] = ["actions": [[
+            "type": "pointer", "id": "finger1",
+            "parameters": ["pointerType": "touch"],
+            "actions": [
+                ["type": "pointerMove", "duration": 0, "x": x, "y": y],
+                ["type": "pointerDown", "button": 0],
+                ["type": "pause", "duration": 50],
+                ["type": "pointerUp", "button": 0],
+            ],
+        ]]]
+        _ = try await post("session/\(id)/actions", body: body)
     }
 
     public func typeText(session id: String, _ text: String) async throws {
@@ -70,9 +81,19 @@ public actor WebDriverAgentClient {
 
     public func drag(session id: String, fromX: Double, fromY: Double,
                      toX: Double, toY: Double, duration: Double = 0.3) async throws {
-        _ = try await post("session/\(id)/wda/dragfromtoforduration",
-                           body: ["fromX": fromX, "fromY": fromY, "toX": toX, "toY": toY,
-                                  "duration": duration])
+        // W3C Actions API (mesmo motivo do tap): pointerMove com duração faz o arrasto.
+        let durMs = Int(duration * 1000)
+        let body: [String: Any] = ["actions": [[
+            "type": "pointer", "id": "finger1",
+            "parameters": ["pointerType": "touch"],
+            "actions": [
+                ["type": "pointerMove", "duration": 0, "x": fromX, "y": fromY],
+                ["type": "pointerDown", "button": 0],
+                ["type": "pointerMove", "duration": durMs, "x": toX, "y": toY],
+                ["type": "pointerUp", "button": 0],
+            ],
+        ]]]
+        _ = try await post("session/\(id)/actions", body: body)
     }
 
     public func launchApp(session id: String, bundleId: String) async throws {
