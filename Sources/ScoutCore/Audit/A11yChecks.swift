@@ -6,6 +6,10 @@ public struct A11yIssue: Sendable, Codable {
     public var rule: String
     public var nodeId: String
     public var message: String
+
+    public init(severity: Severity, rule: String, nodeId: String, message: String) {
+        self.severity = severity; self.rule = rule; self.nodeId = nodeId; self.message = message
+    }
 }
 
 /// Checagens de acessibilidade rodadas em cada tela durante o audit.

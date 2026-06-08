@@ -1,0 +1,27 @@
+{
+  "name": "Reminders — primeiro uso",
+  "bundleId": "com.apple.reminders",
+  "provider": "anthropic",
+  "scenarios": [
+    {
+      "id": "criar-lista",
+      "goal": "Criar uma lista nova chamada 'Compras' e adicionar o item 'Café'",
+      "persona": "Usuário de primeira viagem, nunca usou o app de Lembretes",
+      "expectedOutcome": "succeeded"
+    },
+    {
+      "id": "marcar-concluido",
+      "goal": "Marcar um lembrete existente como concluído",
+      "persona": "Usuário recorrente, com pressa",
+      "expectedOutcome": "succeeded",
+      "maxSteps": 20
+    },
+    {
+      "id": "buscar",
+      "goal": "Usar a busca pra encontrar um lembrete e abri-lo",
+      "persona": "Usuário curioso explorando recursos",
+      "expectedOutcome": "succeeded",
+      "failOnFriction": true
+    }
+  ]
+}

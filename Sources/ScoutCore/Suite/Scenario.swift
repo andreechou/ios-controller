@@ -33,4 +33,11 @@ public struct ScenarioResult: Sendable, Codable {
     public var tokens: Int
     public var friction: [String]
     public var failureReason: String?
+
+    public init(scenario: Scenario, actualOutcome: AgentDecision.Status, passed: Bool,
+                steps: Int, tokens: Int, friction: [String], failureReason: String?) {
+        self.scenario = scenario; self.actualOutcome = actualOutcome; self.passed = passed
+        self.steps = steps; self.tokens = tokens
+        self.friction = friction; self.failureReason = failureReason
+    }
 }

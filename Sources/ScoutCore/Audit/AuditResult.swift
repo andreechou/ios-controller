@@ -17,6 +17,12 @@ public struct AuditScreen: Sendable, Codable, Identifiable {
     public var screenshotPNG: Data
     public var nodeCount: Int
     public var issues: [A11yIssue]
+
+    public init(signature: String, pathDescription: String, screenshotPNG: Data,
+                nodeCount: Int, issues: [A11yIssue]) {
+        self.signature = signature; self.pathDescription = pathDescription
+        self.screenshotPNG = screenshotPNG; self.nodeCount = nodeCount; self.issues = issues
+    }
 }
 
 /// Resultado completo do audit.
@@ -26,6 +32,12 @@ public struct AuditResult: Sendable, Codable {
     public var startedAt: Date
     public var finishedAt: Date
     public var truncated: Bool   // true se bateu o teto de telas/profundidade
+
+    public init(bundleId: String, screens: [AuditScreen], startedAt: Date,
+                finishedAt: Date, truncated: Bool) {
+        self.bundleId = bundleId; self.screens = screens
+        self.startedAt = startedAt; self.finishedAt = finishedAt; self.truncated = truncated
+    }
 
     public var totalIssues: Int { screens.reduce(0) { $0 + $1.issues.count } }
 }

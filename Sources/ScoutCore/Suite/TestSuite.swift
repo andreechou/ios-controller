@@ -27,4 +27,9 @@ public struct SuiteResult: Sendable, Codable {
     public var failed: Int { results.count - passed }
     public var startedAt: Date
     public var finishedAt: Date
+
+    public init(suite: String, results: [ScenarioResult], startedAt: Date, finishedAt: Date) {
+        self.suite = suite; self.results = results
+        self.startedAt = startedAt; self.finishedAt = finishedAt
+    }
 }

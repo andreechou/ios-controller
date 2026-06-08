@@ -77,6 +77,74 @@ case "audit":
     print("\n\(result.screens.count) telas, \(result.totalIssues) issues\(result.truncated ? " (truncado)" : "")")
     write(ReportRenderer.auditHTML(result), to: arg("out") ?? "scout-audit.html")
 
+case "demo":
+    // Gera relatórios de exemplo SEM WDA: screenshot REAL do simulador + árvore
+    // de a11y sintética. As checagens (A11yChecks), assinatura (ScreenSignature)
+    // e o render (ReportRenderer) são os de produção — é exatamente o HTML que
+    // `audit`/`suite` geram. Útil pra ver o output sem subir o WebDriverAgent.
+    let udid = arg("udid") ?? "booted"
+    let shot = (try? Simctl().screenshotPNG(udid: udid)) ?? Data()
+    if shot.isEmpty { print("aviso: sem screenshot (simulador bootado?) — cards sem imagem") }
+
+    func node(_ id: String, _ role: String, _ label: String?, _ w: Double, _ h: Double)
+        -> AccessibilitySnapshot.Node {
+        .init(id: id, role: role, label: label, value: nil, enabled: true,
+              frame: .init(x: 20, y: 100, width: w, height: h))
+    }
+
+    // Tela 1: lista (Button sem label + alvo 30x30 → missing-label + touch-target)
+    let listas = AccessibilitySnapshot(nodes: [
+        node("0", "StaticText", "Minhas Listas", 200, 30),
+        node("0.1", "Button", "Nova Lista", 200, 44),
+        node("0.2", "Button", "", 30, 30),
+        node("0.3", "Cell", "Compras", 360, 48),
+        node("0.4", "Cell", "Trabalho", 360, 48),
+    ])
+    // Tela 2: form (TextField com 40pt de altura → touch-target)
+    let novaLista = AccessibilitySnapshot(nodes: [
+        node("0", "TextField", "Nome da lista", 300, 40),
+        node("0.1", "Button", "Salvar", 100, 44),
+        node("0.2", "Button", "Cancelar", 100, 44),
+    ])
+
+    let screens = [
+        AuditScreen(signature: ScreenSignature.of(listas), pathDescription: "root",
+                    screenshotPNG: shot, nodeCount: listas.nodes.count,
+                    issues: A11yChecks.run(on: listas)),
+        AuditScreen(signature: ScreenSignature.of(novaLista),
+                    pathDescription: "root → tap Button 'Nova Lista'",
+                    screenshotPNG: shot, nodeCount: novaLista.nodes.count,
+                    issues: A11yChecks.run(on: novaLista)),
+    ]
+    let auditResult = AuditResult(bundleId: "com.apple.reminders (demo)", screens: screens,
+                                  startedAt: Date(), finishedAt: Date(), truncated: false)
+    write(ReportRenderer.auditHTML(auditResult), to: "demo-audit.html")
+
+    func scen(_ id: String, _ goal: String, _ persona: String, fof: Bool = false) -> Scenario {
+        Scenario(id: id, goal: goal, persona: persona, expectedOutcome: .succeeded, failOnFriction: fof)
+    }
+    let scenarioResults = [
+        ScenarioResult(scenario: scen("criar-lista", "Criar lista 'Compras' e adicionar 'Café'",
+                                      "Primeira viagem, com pressa"),
+                       actualOutcome: .succeeded, passed: true, steps: 12, tokens: 8400,
+                       friction: [], failureReason: nil),
+        ScenarioResult(scenario: scen("marcar-concluido", "Marcar um lembrete como concluído",
+                                      "Recorrente, com pressa"),
+                       actualOutcome: .succeeded, passed: true, steps: 9, tokens: 5200,
+                       friction: ["Alvo de toque do checkbox menor que 44pt"], failureReason: nil),
+        ScenarioResult(scenario: scen("buscar", "Buscar um lembrete e abri-lo",
+                                      "Curioso explorando", fof: true),
+                       actualOutcome: .succeeded, passed: false, steps: 15, tokens: 11000,
+                       friction: ["Botão '+' sem label de a11y", "Ambíguo: 'Pronto' vs 'Salvar'"],
+                       failureReason: "fricção detectada (2)"),
+    ]
+    let suiteResult = SuiteResult(suite: "Reminders — primeiro uso (demo)", results: scenarioResults,
+                                  startedAt: Date(), finishedAt: Date())
+    write(ReportRenderer.suiteHTML(suiteResult), to: "demo-suite.html")
+
+    print("\n✓ demo: demo-audit.html + demo-suite.html")
+    print("  screenshot real do sim · árvore a11y sintética · checks/render reais")
+
 default:
-    fail("comando desconhecido: \(command) (use run | suite | audit)")
+    fail("comando desconhecido: \(command) (use run | suite | audit | demo)")
 }
