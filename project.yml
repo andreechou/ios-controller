@@ -1,0 +1,96 @@
+name: Scout
+options:
+  bundleIdPrefix: md.chou.scout
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    DEVELOPMENT_TEAM: "" # Personal Team — preencher se necessário
+    CODE_SIGN_STYLE: Automatic
+
+packages:
+  MCP:
+    url: https://github.com/modelcontextprotocol/swift-sdk
+    from: "0.11.0"
+
+targets:
+  # Lógica compartilhada entre app e CLI. Sem dependência de UI.
+  # Static lib: sem bundle aninhado pra assinar (app/cli/mcp/tests só linkam).
+  ScoutCore:
+    type: library.static
+    platform: macOS
+    sources:
+      - Sources/ScoutCore
+
+  # App nativo (SwiftUI/AppKit) — janela com simulador + feed de steps.
+  Scout:
+    type: application
+    platform: macOS
+    sources:
+      - Sources/ScoutApp
+    dependencies:
+      - target: ScoutCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: md.chou.scout.app
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+        ENABLE_HARDENED_RUNTIME: YES
+    info:
+      path: Sources/ScoutApp/Info.plist
+      properties:
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true # WDA em localhost
+        LSMinimumSystemVersion: "14.0"
+
+  # Binário headless que compartilha ScoutCore — pra rodar em CI/Claude Code.
+  scout-cli:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/scout-cli
+    dependencies:
+      - target: ScoutCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: md.chou.scout.cli
+
+  # Servidor MCP (stdio) — expõe o SimulatorDriver como tools pro Claude Code.
+  scout-mcp:
+    type: tool
+    platform: macOS
+    sources:
+      - Sources/scout-mcp
+    dependencies:
+      - target: ScoutCore
+      - package: MCP
+        product: MCP
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: md.chou.scout.mcp
+
+  ScoutCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/ScoutCoreTests
+    dependencies:
+      - target: ScoutCore
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Scout:
+    build:
+      targets:
+        Scout: all
+        scout-cli: all
+    run:
+      config: Debug
+    test:
+      targets:
+        - ScoutCoreTests

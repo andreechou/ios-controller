@@ -1,0 +1,27 @@
+{
+  "name": "Onboarding crítico",
+  "bundleId": "com.exemplo.app",
+  "provider": "deepseek",
+  "scenarios": [
+    {
+      "id": "signup-feliz",
+      "goal": "Cadastrar uma conta nova e chegar na home",
+      "persona": "Usuário de primeira viagem, com pressa, nunca viu o app",
+      "expectedOutcome": "succeeded"
+    },
+    {
+      "id": "login-existente",
+      "goal": "Entrar com uma conta que já existe",
+      "persona": "Usuário recorrente que lembra o email mas não a senha",
+      "expectedOutcome": "succeeded",
+      "maxSteps": 25
+    },
+    {
+      "id": "criar-primeira-lista",
+      "goal": "Depois de logar, criar a primeira lista e adicionar um item",
+      "persona": "Usuário curioso explorando recursos",
+      "expectedOutcome": "succeeded",
+      "failOnFriction": true
+    }
+  ]
+}

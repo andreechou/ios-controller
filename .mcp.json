@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "xcodebuild": {
+      "command": "npx",
+      "args": ["-y", "xcodebuildmcp@latest"]
+    },
+    "scout": {
+      "command": ".build/release/scout-mcp",
+      "args": [],
+      "env": {
+        "SCOUT_UDID": "booted",
+        "SCOUT_BUNDLE_ID": "com.exemplo.app"
+      }
+    }
+  }
+}

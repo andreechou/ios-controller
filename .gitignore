@@ -1,0 +1,19 @@
+# Build / derived data (xcodebuild + SPM checkouts)
+.build/
+DerivedData/
+
+# Gerado por xcodegen a partir de project.yml — regenere com `xcodegen generate`
+Scout.xcodeproj/
+
+# Xcode user state
+*.xcuserstate
+xcuserdata/
+
+# Relatórios gerados pelo scout-cli
+scout-audit.html
+scout-suite.html
+audit.html
+report.html
+
+# macOS
+.DS_Store
