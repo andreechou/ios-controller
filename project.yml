@@ -37,12 +37,13 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: md.chou.ioscontroller.app
-        INFOPLIST_KEY_CFBundleDisplayName: iOS Controller
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         ENABLE_HARDENED_RUNTIME: YES
     info:
       path: Sources/IOSControllerApp/Info.plist
       properties:
+        CFBundleDisplayName: iOS Controller
+        CFBundleName: iOS Controller
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true # WDA em localhost
         LSMinimumSystemVersion: "14.0"
