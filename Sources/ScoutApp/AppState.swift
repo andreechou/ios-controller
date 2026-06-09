@@ -40,6 +40,55 @@ final class AppState {
 
     func stopPreview() { previewTask?.cancel(); previewTask = nil }
 
+    @ObservationIgnored private var feedTask: Task<Void, Never>?
+
+    /// Espelha no feed os passos de QUALQUER driver externo (wda.sh / curl / MCP)
+    /// que escreva em ~/.scout/feed.jsonl — uma linha JSON por ação. Começa no fim
+    /// do arquivo (só passos novos); detecta truncamento (nova sessão) e reseta.
+    func startFeedTail() {
+        feedTask?.cancel()
+        let path = NSHomeDirectory() + "/.scout/feed.jsonl"
+        feedTask = Task { [weak self] in
+            var offset: UInt64 = Self.fileSize(path)
+            while !Task.isCancelled {
+                let (lines, newOffset) = Self.tail(path, from: offset)
+                offset = newOffset
+                guard let self, !Task.isCancelled else { break }
+                for line in lines {
+                    guard let data = line.data(using: .utf8),
+                          let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    else { continue }
+                    let text = obj["text"] as? String ?? ""
+                    if (obj["kind"] as? String) == "friction" {
+                        self.friction.append(text)
+                    } else if !text.isEmpty {
+                        self.steps.append(.init(index: self.steps.count, reasoning: text,
+                                                action: nil, ok: obj["ok"] as? Bool))
+                    }
+                }
+                try? await Task.sleep(nanoseconds: 400_000_000)
+            }
+        }
+    }
+
+    nonisolated private static func fileSize(_ path: String) -> UInt64 {
+        let attrs = try? FileManager.default.attributesOfItem(atPath: path)
+        return (attrs?[.size] as? NSNumber)?.uint64Value ?? 0
+    }
+
+    /// Lê linhas novas a partir de `offset`. Retorna (linhas, novo offset).
+    nonisolated private static func tail(_ path: String, from offset: UInt64) -> ([String], UInt64) {
+        guard let h = try? FileHandle(forReadingFrom: URL(fileURLWithPath: path)) else { return ([], offset) }
+        defer { try? h.close() }
+        let end = (try? h.seekToEnd()) ?? 0
+        if end < offset { return ([], end) }   // truncado/recriado → reseta
+        try? h.seek(toOffset: offset)
+        let data = (try? h.readToEnd()) ?? Data()
+        let lines = (String(data: data, encoding: .utf8) ?? "")
+            .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
+        return (lines, end)
+    }
+
     func start(config: RunConfig, apiKey: String = "") {
         steps = []; friction = []; outcome = nil
         startPreview(udid: config.udid)

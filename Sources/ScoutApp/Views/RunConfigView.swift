@@ -59,6 +59,7 @@ struct RunConfigView: View {
         .navigationTitle("Scout")
         .onAppear {
             state.startPreview(udid: udid)
+            state.startFeedTail()
             apiKey = Keychain.load(account: provider.rawValue)
         }
         .onChange(of: provider) { _, p in apiKey = Keychain.load(account: p.rawValue) }
