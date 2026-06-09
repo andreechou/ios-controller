@@ -1,12 +1,12 @@
 import SwiftUI
 import ScoutCore
 
-/// Painel de configuração — Form nativo (estilo System Settings).
+/// Config panel — native Form (System Settings style).
 struct RunConfigView: View {
     @Environment(AppState.self) private var state
 
-    @State private var goal = "Cadastrar e criar minha primeira lista"
-    @State private var persona = "Usuário de primeira viagem, nunca viu o app"
+    @State private var goal = "Sign up and create my first list"
+    @State private var persona = "First-time user, has never seen the app"
     @State private var udid = "booted"
     @State private var bundleId = "design.chou.carretel.ios"
     @State private var provider: ProviderID = .anthropic
@@ -14,17 +14,17 @@ struct RunConfigView: View {
 
     var body: some View {
         Form {
-            Section("Teste") {
-                TextField("Objetivo", text: $goal, axis: .vertical).lineLimit(2...5)
+            Section("Test") {
+                TextField("Goal", text: $goal, axis: .vertical).lineLimit(2...5)
                 TextField("Persona", text: $persona, axis: .vertical).lineLimit(1...3)
             }
 
-            Section("Alvo") {
+            Section("Target") {
                 TextField("Simulator UDID", text: $udid)
                 TextField("Bundle ID", text: $bundleId)
             }
 
-            Section("Modelo") {
+            Section("Model") {
                 Picker("Provider", selection: $provider) {
                     ForEach(ProviderID.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
@@ -39,7 +39,7 @@ struct RunConfigView: View {
                         model: ProviderRegistry.defaultModel(for: provider)),
                         apiKey: apiKey)
                 } label: {
-                    Label(state.isRunning ? "Rodando…" : "Iniciar run", systemImage: "play.fill")
+                    Label(state.isRunning ? "Running…" : "Start run", systemImage: "play.fill")
                         .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(.borderedProminent)
@@ -49,7 +49,7 @@ struct RunConfigView: View {
                 Button {
                     state.startPreview(udid: udid)
                 } label: {
-                    Label("Espelhar simulador", systemImage: "eye")
+                    Label("Mirror simulator", systemImage: "eye")
                         .frame(maxWidth: .infinity)
                 }
                 .disabled(udid.isEmpty)

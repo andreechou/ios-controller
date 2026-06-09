@@ -64,7 +64,7 @@ final class AppState {
                 }
             } catch {
                 phase = .finished
-                friction.append("erro de setup: \(error)")
+                friction.append("Setup error: \(error)")
             }
         }
     }

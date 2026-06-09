@@ -1,7 +1,7 @@
 import SwiftUI
 import AppKit
 
-/// Espelha a tela do simulador ao vivo (stream de screenshots do simctl).
+/// Mirrors the simulator screen live (simctl screenshot stream).
 struct SimulatorPaneView: View {
     @Environment(AppState.self) private var state
 
@@ -17,14 +17,14 @@ struct SimulatorPaneView: View {
                     .padding(24)
             } else {
                 ContentUnavailableView {
-                    Label("Simulador", systemImage: "iphone")
+                    Label("Simulator", systemImage: "iphone")
                 } description: {
-                    Text(state.phase == .idle ? "Sem preview" : state.phase.rawValue)
+                    Text(state.phase == .idle ? "No preview" : state.phase.rawValue)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(nsColor: .windowBackgroundColor))
-        .navigationTitle("Simulador")
+        .navigationTitle("Simulator")
     }
 }

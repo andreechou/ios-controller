@@ -1,15 +1,15 @@
 import SwiftUI
 import ScoutCore
 
-/// Feed ao vivo dos passos do agente + fricções acumuladas. List nativa.
+/// Live feed of the agent's steps + accumulated friction. Native List.
 struct StepFeedView: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
         List {
-            Section("Passos") {
+            Section("Steps") {
                 if state.steps.isEmpty {
-                    Text("Nenhum passo ainda").foregroundStyle(.secondary)
+                    Text("No steps yet").foregroundStyle(.secondary)
                 }
                 ForEach(state.steps) { row in
                     VStack(alignment: .leading, spacing: 4) {
@@ -32,7 +32,7 @@ struct StepFeedView: View {
             }
 
             if !state.friction.isEmpty {
-                Section("Fricção (\(state.friction.count))") {
+                Section("Friction (\(state.friction.count))") {
                     ForEach(state.friction, id: \.self) { f in
                         Label(f, systemImage: "exclamationmark.triangle.fill")
                             .foregroundStyle(.orange)
