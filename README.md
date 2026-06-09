@@ -44,6 +44,12 @@ scout-cli --udid <UDID> --bundle com.exemplo.app \
           --provider deepseek
 ```
 
+## Modos
+
+Cinco formas de dirigir o sim — o **cérebro** é plugável, as **mãos** (WDA) não
+mudam: LLM autônomo (app/CLI), Claude Code (MCP), audit determinístico, ou na mão
+via WDA (`scripts/wda.sh`). Veja [`docs/MODES.md`](docs/MODES.md).
+
 ## Estado
 
 Compila e roda — app, `scout-cli`, `scout-mcp` e testes (verdes). Todas as
