@@ -1,49 +1,45 @@
 import SwiftUI
 import ScoutCore
 
+/// Feed ao vivo dos passos do agente + fricções acumuladas. List nativa.
 struct StepFeedView: View {
     @Environment(AppState.self) private var state
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("FEED").font(Theme.monoSmall).foregroundStyle(Theme.muted).padding(12)
-
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 8) {
-                    ForEach(state.steps) { row in
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack {
-                                Text("#\(row.index)").foregroundStyle(Theme.accent)
-                                if let ok = row.ok {
-                                    Image(systemName: ok ? "checkmark" : "xmark")
-                                        .foregroundStyle(ok ? Theme.success : Theme.danger)
-                                }
-                            }.font(Theme.monoSmall)
-                            Text(row.reasoning).font(Theme.monoSmall)
-                            if let action = row.action {
-                                Text(action).font(Theme.monoSmall).foregroundStyle(Theme.muted)
+        List {
+            Section("Passos") {
+                if state.steps.isEmpty {
+                    Text("Nenhum passo ainda").foregroundStyle(.secondary)
+                }
+                ForEach(state.steps) { row in
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 6) {
+                            Text("#\(row.index)")
+                                .font(.caption.monospaced())
+                                .foregroundStyle(.secondary)
+                            if let ok = row.ok {
+                                Image(systemName: ok ? "checkmark.circle.fill" : "xmark.circle.fill")
+                                    .foregroundStyle(ok ? .green : .red)
                             }
                         }
-                        .padding(8)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Theme.surface)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                        Text(row.reasoning).font(.callout)
+                        if let action = row.action {
+                            Text(action).font(.caption.monospaced()).foregroundStyle(.secondary)
+                        }
                     }
-                }.padding(12)
+                    .padding(.vertical, 2)
+                }
             }
 
             if !state.friction.isEmpty {
-                Divider().overlay(Theme.border)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("FRICÇÃO (\(state.friction.count))")
-                        .font(Theme.monoSmall).foregroundStyle(Theme.danger)
+                Section("Fricção (\(state.friction.count))") {
                     ForEach(state.friction, id: \.self) { f in
-                        Text("• \(f)").font(Theme.monoSmall).foregroundStyle(Theme.text)
+                        Label(f, systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
                     }
-                }.padding(12)
+                }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Theme.bg)
+        .navigationTitle("Feed")
     }
 }

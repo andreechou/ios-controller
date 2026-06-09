@@ -8,9 +8,8 @@ struct ScoutApp: App {
         WindowGroup {
             RootView()
                 .environment(state)
-                .frame(minWidth: 900, minHeight: 600)
-                .preferredColorScheme(.dark)
+                .frame(minWidth: 960, minHeight: 600)
         }
-        .windowStyle(.hiddenTitleBar)
+        // Sem forçar aparência: segue light/dark e o accent do sistema.
     }
 }

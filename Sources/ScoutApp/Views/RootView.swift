@@ -1,21 +1,18 @@
 import SwiftUI
-import ScoutCore
 
+/// Layout nativo de 3 colunas (sidebar · conteúdo · inspetor), como Mail/Notas.
 struct RootView: View {
-    @Environment(AppState.self) private var state
-
     var body: some View {
-        HSplitView {
+        NavigationSplitView {
             RunConfigView()
-                .frame(minWidth: 280, maxWidth: 340)
+                .navigationSplitViewColumnWidth(min: 300, ideal: 320, max: 400)
+        } content: {
             SimulatorPaneView()
-                .frame(minWidth: 280)
+                .navigationSplitViewColumnWidth(min: 300, ideal: 360)
+        } detail: {
             StepFeedView()
-                .frame(minWidth: 300)
+                .navigationSplitViewColumnWidth(min: 280, ideal: 360)
         }
-        .background(Theme.bg)
-        .foregroundStyle(Theme.text)
-        .font(Theme.mono)
     }
 }
 
