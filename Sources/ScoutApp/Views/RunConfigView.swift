@@ -6,7 +6,7 @@ struct RunConfigView: View {
 
     @State private var goal = "Cadastrar e criar minha primeira lista"
     @State private var persona = "Usuário de primeira viagem, nunca viu o app"
-    @State private var udid = ""
+    @State private var udid = "booted"
     @State private var bundleId = ""
     @State private var provider: ProviderID = .anthropic
 
@@ -36,10 +36,15 @@ struct RunConfigView: View {
             .buttonStyle(.borderedProminent)
             .tint(Theme.accent)
 
+            Button("👁 espelhar simulador") { state.startPreview(udid: udid) }
+                .disabled(udid.isEmpty)
+                .buttonStyle(.bordered)
+
             Spacer()
         }
         .padding(16)
         .background(Theme.surface)
+        .onAppear { state.startPreview(udid: udid) }
     }
 
     @ViewBuilder

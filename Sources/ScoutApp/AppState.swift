@@ -17,10 +17,32 @@ final class AppState {
     var steps: [StepRow] = []
     var friction: [String] = []
     var outcome: AgentDecision.Status?
+    /// Último frame do simulador (PNG), atualizado pelo preview ao vivo.
+    var screenshot: Data?
     var isRunning: Bool { phase == .preparing || phase == .running }
+
+    @ObservationIgnored private var previewTask: Task<Void, Never>?
+
+    /// Espelha o simulador no pane: tira screenshot via simctl em loop (~1.5 fps).
+    /// Independe do WDA — funciona ocioso e durante um run.
+    func startPreview(udid: String) {
+        guard !udid.isEmpty else { return }
+        stopPreview()
+        previewTask = Task { [weak self] in
+            while !Task.isCancelled {
+                let data = await Task.detached { try? Simctl().screenshotPNG(udid: udid) }.value
+                guard let self, !Task.isCancelled else { break }
+                if let data { self.screenshot = data }
+                try? await Task.sleep(nanoseconds: 650_000_000)
+            }
+        }
+    }
+
+    func stopPreview() { previewTask?.cancel(); previewTask = nil }
 
     func start(config: RunConfig) {
         steps = []; friction = []; outcome = nil
+        startPreview(udid: config.udid)
         Task {
             do {
                 let registry = ProviderRegistry()
