@@ -10,20 +10,29 @@ public struct ProviderRegistry: Sendable {
     }
 
     public func provider(for id: ProviderID) throws -> ModelProvider {
+        let k = try key(for: id)
         switch id {
-        case .anthropic:
-            return AnthropicProvider(apiKey: try key("ANTHROPIC_API_KEY", id))
-        case .openai:
-            return OpenAICompatibleProvider.openai(try key("OPENAI_API_KEY", id))
-        case .deepseek:
-            return OpenAICompatibleProvider.deepseek(try key("DEEPSEEK_API_KEY", id))
-        case .openrouter:
-            return OpenAICompatibleProvider.openrouter(try key("OPENROUTER_API_KEY", id))
+        case .anthropic:  return AnthropicProvider(apiKey: k)
+        case .openai:     return OpenAICompatibleProvider.openai(k)
+        case .deepseek:   return OpenAICompatibleProvider.deepseek(k)
+        case .openrouter: return OpenAICompatibleProvider.openrouter(k)
         }
     }
 
-    private func key(_ name: String, _ id: ProviderID) throws -> String {
-        guard let v = env[name], !v.isEmpty else { throw ProviderError.missingAPIKey(id) }
+    /// Nome da variável de ambiente que guarda a key de cada provider.
+    public static func envVar(for id: ProviderID) -> String {
+        switch id {
+        case .anthropic:  return "ANTHROPIC_API_KEY"
+        case .openai:     return "OPENAI_API_KEY"
+        case .deepseek:   return "DEEPSEEK_API_KEY"
+        case .openrouter: return "OPENROUTER_API_KEY"
+        }
+    }
+
+    private func key(for id: ProviderID) throws -> String {
+        guard let v = env[Self.envVar(for: id)], !v.isEmpty else {
+            throw ProviderError.missingAPIKey(id)
+        }
         return v
     }
 

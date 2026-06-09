@@ -40,12 +40,15 @@ final class AppState {
 
     func stopPreview() { previewTask?.cancel(); previewTask = nil }
 
-    func start(config: RunConfig) {
+    func start(config: RunConfig, apiKey: String = "") {
         steps = []; friction = []; outcome = nil
         startPreview(udid: config.udid)
         Task {
             do {
-                let registry = ProviderRegistry()
+                // Key da UI (Keychain) tem prioridade; vazia → cai pro ambiente.
+                var env = ProcessInfo.processInfo.environment
+                if !apiKey.isEmpty { env[ProviderRegistry.envVar(for: config.provider)] = apiKey }
+                let registry = ProviderRegistry(env: env)
                 let provider = try registry.provider(for: config.provider)
                 let agent = Agent(provider: provider, model: config.model,
                                   goal: config.goal, persona: config.persona,

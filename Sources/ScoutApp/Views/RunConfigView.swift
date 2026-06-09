@@ -9,6 +9,7 @@ struct RunConfigView: View {
     @State private var udid = "booted"
     @State private var bundleId = ""
     @State private var provider: ProviderID = .anthropic
+    @State private var apiKey = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -25,12 +26,16 @@ struct RunConfigView: View {
                     ForEach(ProviderID.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }.labelsHidden()
             }
+            field("API KEY · \(provider.rawValue)") {
+                SecureField("sk-… (vazio = usa env)", text: $apiKey)
+            }
 
             Button(state.isRunning ? "rodando…" : "▶ iniciar run") {
                 state.start(config: RunConfig(
                     goal: goal, persona: persona, udid: udid, bundleId: bundleId,
                     provider: provider,
-                    model: ProviderRegistry.defaultModel(for: provider)))
+                    model: ProviderRegistry.defaultModel(for: provider)),
+                    apiKey: apiKey)
             }
             .disabled(state.isRunning || udid.isEmpty || bundleId.isEmpty)
             .buttonStyle(.borderedProminent)
@@ -44,7 +49,12 @@ struct RunConfigView: View {
         }
         .padding(16)
         .background(Theme.surface)
-        .onAppear { state.startPreview(udid: udid) }
+        .onAppear {
+            state.startPreview(udid: udid)
+            apiKey = Keychain.load(account: provider.rawValue)
+        }
+        .onChange(of: provider) { _, p in apiKey = Keychain.load(account: p.rawValue) }
+        .onChange(of: apiKey) { _, k in Keychain.save(k, account: provider.rawValue) }
     }
 
     @ViewBuilder
