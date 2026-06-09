@@ -3,15 +3,15 @@
 DerivedData/
 
 # Gerado por xcodegen a partir de project.yml — regenere com `xcodegen generate`
-Scout.xcodeproj/
+IOSController.xcodeproj/
 
 # Xcode user state
 *.xcuserstate
 xcuserdata/
 
-# Relatórios gerados pelo scout-cli
-scout-audit.html
-scout-suite.html
+# Relatórios gerados pelo ios-controller-cli
+ios-controller-audit.html
+ios-controller-suite.html
 audit.html
 report.html
 demo-audit.html

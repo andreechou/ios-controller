@@ -1,5 +1,5 @@
 import SwiftUI
-import ScoutCore
+import IOSControllerCore
 
 /// Estado observável da UI. Dispara um run e consome o AsyncStream de eventos.
 @MainActor
@@ -43,11 +43,11 @@ final class AppState {
     @ObservationIgnored private var feedTask: Task<Void, Never>?
 
     /// Espelha no feed os passos de QUALQUER driver externo (wda.sh / curl / MCP)
-    /// que escreva em ~/.scout/feed.jsonl — uma linha JSON por ação. Começa no fim
+    /// que escreva em ~/.ios-controller/feed.jsonl — uma linha JSON por ação. Começa no fim
     /// do arquivo (só passos novos); detecta truncamento (nova sessão) e reseta.
     func startFeedTail() {
         feedTask?.cancel()
-        let path = NSHomeDirectory() + "/.scout/feed.jsonl"
+        let path = NSHomeDirectory() + "/.ios-controller/feed.jsonl"
         feedTask = Task { [weak self] in
             var offset: UInt64 = Self.fileSize(path)
             while !Task.isCancelled {

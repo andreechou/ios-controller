@@ -8,7 +8,7 @@ public actor JSONLLedger: Ledger {
 
     public init(runId: String = UUID().uuidString,
                 directory: URL = URL(fileURLWithPath: NSHomeDirectory())
-                    .appendingPathComponent(".scout/runs")) {
+                    .appendingPathComponent(".ios-controller/runs")) {
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         self.url = directory.appendingPathComponent("\(runId).jsonl")
         self.encoder = JSONEncoder()

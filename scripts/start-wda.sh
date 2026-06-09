@@ -3,7 +3,7 @@
 # Pré: git submodule add https://github.com/appium/WebDriverAgent vendor/WebDriverAgent
 set -euo pipefail
 
-UDID="${SCOUT_UDID:-booted}"
+UDID="${IOSCTL_UDID:-booted}"
 WDA_DIR="vendor/WebDriverAgent"
 
 echo "→ subindo WebDriverAgentRunner no simulador $UDID …"

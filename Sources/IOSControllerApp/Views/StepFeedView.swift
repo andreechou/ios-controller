@@ -1,5 +1,5 @@
 import SwiftUI
-import ScoutCore
+import IOSControllerCore
 
 /// Live feed of the agent's steps + accumulated friction. Native List.
 struct StepFeedView: View {

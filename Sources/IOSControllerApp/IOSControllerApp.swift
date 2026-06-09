@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct ScoutApp: App {
+struct IOSControllerApp: App {
     @State private var state = AppState()
 
     var body: some Scene {

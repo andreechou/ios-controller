@@ -1,4 +1,4 @@
-# scout
+# iOS Controller
 
 Teste de usuário dirigido por IA pro iOS Simulator. Escreva um objetivo em
 linguagem natural e uma persona; um agente LLM lê a tela, interage, e reporta
@@ -35,10 +35,10 @@ export ANTHROPIC_API_KEY=...   # ou OPENAI/DEEPSEEK/OPENROUTER
 
 ## Rodar
 
-App: `open Scout.xcodeproj` → ▶
+App: `open IOSController.xcodeproj` → ▶
 CLI:
 ```sh
-scout-cli --udid <UDID> --bundle com.exemplo.app \
+ios-controller-cli --udid <UDID> --bundle com.exemplo.app \
           --goal "Cadastrar e criar minha primeira lista" \
           --persona "Usuário de primeira viagem" \
           --provider deepseek
@@ -52,7 +52,7 @@ via WDA (`scripts/wda.sh`). Veja [`docs/MODES.md`](docs/MODES.md).
 
 ## Estado
 
-Compila e roda — app, `scout-cli`, `scout-mcp` e testes (verdes). Todas as
+Compila e roda — app, `ios-controller-cli`, `ios-controller-mcp` e testes (verdes). Todas as
 camadas implementadas: driver WDA (HTTP), percepção (a11y+screenshot), agente
 (tool-use), 4 providers, ledger, suite e audit. Refinamentos pendentes listados
 em `CLAUDE.md` (TODO).

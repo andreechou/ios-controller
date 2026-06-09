@@ -1,6 +1,6 @@
 import Foundation
 import MCP
-import ScoutCore
+import IOSControllerCore
 
 /// Catálogo de tools MCP expostas ao Claude Code e o dispatch de cada chamada.
 /// Espelha o `ToolSchema` interno, mas no formato do swift-sdk (`Tool`/`Value`).

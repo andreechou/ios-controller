@@ -4,12 +4,12 @@
       "command": "npx",
       "args": ["-y", "xcodebuildmcp@latest"]
     },
-    "scout": {
-      "command": ".build/release/scout-mcp",
+    "ios-controller": {
+      "command": ".build/release/ios-controller-mcp",
       "args": [],
       "env": {
-        "SCOUT_UDID": "booted",
-        "SCOUT_BUNDLE_ID": "com.exemplo.app"
+        "IOSCTL_UDID": "booted",
+        "IOSCTL_BUNDLE_ID": "com.exemplo.app"
       }
     }
   }

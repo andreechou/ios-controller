@@ -1,5 +1,5 @@
 import XCTest
-@testable import ScoutCore
+@testable import IOSControllerCore
 
 final class AgentDecisionTests: XCTestCase {
     func testReportToolEndsRun() throws {

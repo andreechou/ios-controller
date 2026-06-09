@@ -28,7 +28,7 @@ public enum ReportRenderer {
 
         let summary = """
         <header>
-          <h1>scout · audit</h1>
+          <h1>iOS Controller · audit</h1>
           <div class="stats">
             <span><b>\(result.screens.count)</b> telas</span>
             <span><b>\(result.totalIssues)</b> issues</span>
@@ -38,7 +38,7 @@ public enum ReportRenderer {
         </header>
         """
 
-        return page(title: "scout · audit", body: summary + "<div class=\"grid\">\(cards)</div>")
+        return page(title: "iOS Controller · audit", body: summary + "<div class=\"grid\">\(cards)</div>")
     }
 
     // MARK: - Suíte (tabela de cenários)
@@ -63,7 +63,7 @@ public enum ReportRenderer {
 
         let summary = """
         <header>
-          <h1>scout · \(esc(result.suite))</h1>
+          <h1>iOS Controller · \(esc(result.suite))</h1>
           <div class="stats">
             <span class="ok"><b>\(result.passed)</b> passou</span>
             <span class="warn"><b>\(result.failed)</b> falhou</span>
@@ -77,7 +77,7 @@ public enum ReportRenderer {
           <tbody>\(rows)</tbody>
         </table>
         """
-        return page(title: "scout · \(result.suite)", body: summary + table)
+        return page(title: "iOS Controller · \(result.suite)", body: summary + table)
     }
 
     // MARK: - Shell + helpers

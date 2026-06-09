@@ -1,5 +1,5 @@
 import SwiftUI
-import ScoutCore
+import IOSControllerCore
 
 /// Config panel — native Form (System Settings style).
 struct RunConfigView: View {
@@ -56,7 +56,7 @@ struct RunConfigView: View {
             }
         }
         .formStyle(.grouped)
-        .navigationTitle("Scout")
+        .navigationTitle("IOSController")
         .onAppear {
             state.startPreview(udid: udid)
             state.startFeedTail()

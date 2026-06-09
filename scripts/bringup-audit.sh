@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bringup completo end-to-end: builda o WebDriverAgentRunner, sobe o WDA em :8100
-# e roda um `scout audit` contra um app já instalado no simulador — sem precisar
+# e roda um `iOS Controller audit` contra um app já instalado no simulador — sem precisar
 # de API key. Prova que o pipeline inteiro funciona.
 #
 # Pré-requisito (uma vez, fora deste script — integra código externo):
@@ -15,12 +15,12 @@ UDID="${1:-$(xcrun simctl list devices booted | grep -oE '[0-9A-Fa-f-]{36}' | he
 BUNDLE="${2:-com.apple.Preferences}"
 WDA="vendor/WebDriverAgent/WebDriverAgent.xcodeproj"
 DD=/tmp/wda-dd
-CLI=.build/Build/Products/Debug/scout-cli
+CLI=.build/Build/Products/Debug/ios-controller-cli
 
 [ -n "$UDID" ]        || { echo "✗ nenhum simulador bootado. Rode: xcrun simctl boot <UDID>"; exit 1; }
 [ -d vendor/WebDriverAgent ] || { echo "✗ falta o submodule WDA. Rode primeiro:"; \
     echo "  git submodule add https://github.com/appium/WebDriverAgent vendor/WebDriverAgent"; exit 1; }
-[ -x "$CLI" ]         || { echo "✗ scout-cli não buildado. Rode: xcodebuild -project Scout.xcodeproj -scheme scout-cli -destination 'platform=macOS' -derivedDataPath .build build"; exit 1; }
+[ -x "$CLI" ]         || { echo "✗ ios-controller-cli não buildado. Rode: xcodebuild -project IOSController.xcodeproj -scheme ios-controller-cli -destination 'platform=macOS' -derivedDataPath .build build"; exit 1; }
 
 echo "→ alvo: simulador $UDID · app $BUNDLE"
 

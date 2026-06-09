@@ -1,14 +1,14 @@
 import Foundation
-import ScoutCore
+import IOSControllerCore
 
-// scout-cli — três subcomandos, todos sobre o mesmo ScoutCore:
+// ios-controller-cli — três subcomandos, todos sobre o mesmo IOSControllerCore:
 //   run    objetivo único dirigido pelo agente
 //   suite  processo de teste (vários cenários de um JSON)
 //   audit  navega todas as telas e captura screenshots pra auditar
 //
-//   scout-cli run    --udid <U> --bundle <B> --goal "..." [--persona "..."] [--provider ...]
-//   scout-cli suite  <suite.json> --udid <U> [--out report.html]
-//   scout-cli audit  --udid <U> --bundle <B> [--max-screens 60] [--max-depth 4] [--out audit.html]
+//   ios-controller-cli run    --udid <U> --bundle <B> --goal "..." [--persona "..."] [--provider ...]
+//   ios-controller-cli suite  <suite.json> --udid <U> [--out report.html]
+//   ios-controller-cli audit  --udid <U> --bundle <B> [--max-screens 60] [--max-depth 4] [--out audit.html]
 
 func arg(_ name: String) -> String? {
     let a = CommandLine.arguments
@@ -60,7 +60,7 @@ case "suite":
         print("  \(r.passed ? "✓" : "✗") \(r.scenario.id): \(r.actualOutcome.rawValue)")
     }
     print("\n\(result.passed)/\(result.results.count) passou")
-    write(ReportRenderer.suiteHTML(result), to: arg("out") ?? "scout-suite.html")
+    write(ReportRenderer.suiteHTML(result), to: arg("out") ?? "ios-controller-suite.html")
 
 case "audit":
     guard let udid = arg("udid"), let bundle = arg("bundle") else {
@@ -75,7 +75,7 @@ case "audit":
         print("  + \(screen.signature) (\(screen.issues.count) issues) — \(screen.pathDescription)")
     }
     print("\n\(result.screens.count) telas, \(result.totalIssues) issues\(result.truncated ? " (truncado)" : "")")
-    write(ReportRenderer.auditHTML(result), to: arg("out") ?? "scout-audit.html")
+    write(ReportRenderer.auditHTML(result), to: arg("out") ?? "ios-controller-audit.html")
 
 case "demo":
     // Gera relatórios de exemplo SEM WDA: screenshot REAL do simulador + árvore

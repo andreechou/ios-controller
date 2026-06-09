@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # wda.sh — driver manual do simulador via WebDriverAgent (:8100).
 # Dirige o sim "na mão" daqui (Claude Code / terminal) — sem LLM, sem o loop do
-# scout. Pré: WDA no ar (scripts/start-wda.sh). A sessão fica em /tmp/wda-sid.
+# iOS Controller. Pré: WDA no ar (scripts/start-wda.sh). A sessão fica em /tmp/wda-sid.
 #
-# Cada ação também é escrita em ~/.scout/feed.jsonl — o Scout.app segue esse
+# Cada ação também é escrita em ~/.ios-controller/feed.jsonl — o IOSController.app segue esse
 # arquivo e mostra os passos ao vivo no painel direito (mesmo dirigindo daqui).
 #
 #   wda.sh session <bundleId>     abre o app e cria a sessão
@@ -17,12 +17,12 @@ set -euo pipefail
 
 WDA="${WDA_URL:-http://127.0.0.1:8100}"
 SIDFILE=/tmp/wda-sid
-FEED="$HOME/.scout/feed.jsonl"
+FEED="$HOME/.ios-controller/feed.jsonl"
 sid() { cat "$SIDFILE" 2>/dev/null || { echo "sem sessão — rode: wda.sh session <bundle>" >&2; exit 1; }; }
 
-# Escreve um passo no feed que o Scout.app segue. JSON-escapa o texto.
+# Escreve um passo no feed que o IOSController.app segue. JSON-escapa o texto.
 feed() {
-  mkdir -p "$HOME/.scout"
+  mkdir -p "$HOME/.ios-controller"
   printf '%s\n' "$(python3 -c 'import json,sys;print(json.dumps({"text":sys.argv[1],"ok":True}))' "$1")" >> "$FEED"
 }
 
@@ -39,7 +39,7 @@ JSON
 
 case "${1:-help}" in
   session)
-    mkdir -p "$HOME/.scout"; : > "$FEED"          # novo log por sessão
+    mkdir -p "$HOME/.ios-controller"; : > "$FEED"          # novo log por sessão
     curl -s -X POST "$WDA/session" -H 'Content-Type: application/json' \
       -d "{\"capabilities\":{\"alwaysMatch\":{\"bundleId\":\"$2\"}}}" \
       | python3 -c 'import sys,json;print(json.load(sys.stdin)["value"]["sessionId"])' | tee "$SIDFILE"

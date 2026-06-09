@@ -1,6 +1,6 @@
 # Modos de operação — mãos × cérebro
 
-O scout separa duas coisas:
+O iOS Controller separa duas coisas:
 
 - **Mãos/olhos** — quem mexe no simulador: toca, digita, arrasta, lê a tela.
   É **sempre o WDA** (WebDriverAgent), um servidor HTTP rodando dentro do sim.
@@ -20,15 +20,15 @@ CÉREBRO (decide)                     MÃOS (executa)
 
 | # | modo | cérebro | interface | precisa key? | bom pra |
 |---|------|---------|-----------|--------------|---------|
-| 1 | **Scout.app** | LLM via API | GUI nativa macOS | sim | rodar e ver ao vivo |
-| 2 | **scout-cli run/suite** | LLM via API | terminal | sim | CI, headless, batch |
-| 3 | **scout-cli audit** | nenhum (algoritmo) | terminal | **não** | mapear telas + a11y |
-| 4 | **scout-mcp** | **Claude Code** | chat | não | dirigir conversando |
+| 1 | **IOSController.app** | LLM via API | GUI nativa macOS | sim | rodar e ver ao vivo |
+| 2 | **ios-controller-cli run/suite** | LLM via API | terminal | sim | CI, headless, batch |
+| 3 | **ios-controller-cli audit** | nenhum (algoritmo) | terminal | **não** | mapear telas + a11y |
+| 4 | **ios-controller-mcp** | **Claude Code** | chat | não | dirigir conversando |
 | 5 | **WDA direto** | você/eu (curl/`wda.sh`) | terminal/chat | não | controle fino, dev loop |
 
 Modos 1–2: autônomos (um modelo decide sozinho). Modo 3: determinístico, sem IA.
-Modo 4: Claude Code chama as tools do scout. **Modo 5**: fala HTTP direto no WDA,
-sem passar pelo `ScoutCore` — é o mais cru e o mais flexível pra trabalhar daqui.
+Modo 4: Claude Code chama as tools do iOS Controller. **Modo 5**: fala HTTP direto no WDA,
+sem passar pelo `IOSControllerCore` — é o mais cru e o mais flexível pra trabalhar daqui.
 
 ## WDA × MCP — não confundir
 
@@ -41,10 +41,10 @@ São camadas **opostas**. Ambos usam JSON, mas pra coisas diferentes.
 | papel | atuador (tap/type/screenshot) | cola entre cérebro e tools |
 | específico de iOS | sim | não (qualquer tool) |
 
-No modo 4 os dois se encadeiam — `scout-mcp` é o **adaptador**:
+No modo 4 os dois se encadeiam — `ios-controller-mcp` é o **adaptador**:
 
 ```
-Claude Code ──MCP──> scout-mcp ──HTTP──> WDA ──XCTest──> app no sim
+Claude Code ──MCP──> ios-controller-mcp ──HTTP──> WDA ──XCTest──> app no sim
 ```
 
 ## Modo 5 na prática — `scripts/wda.sh`

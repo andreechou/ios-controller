@@ -5,7 +5,7 @@ import Security
 /// melhor que plaintext em UserDefaults. App sem sandbox, então acessa a própria
 /// keychain sem entitlement de grupo.
 enum Keychain {
-    private static let service = "md.chou.scout.apikey"
+    private static let service = "md.chou.ioscontroller.apikey"
 
     static func save(_ value: String, account: String) {
         let base: [String: Any] = [

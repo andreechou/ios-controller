@@ -1,17 +1,17 @@
 import Foundation
 import MCP
-import ScoutCore
+import IOSControllerCore
 
-// scout-mcp — servidor MCP (stdio) que expõe o iOS Simulator como tools.
+// ios-controller-mcp — servidor MCP (stdio) que expõe o iOS Simulator como tools.
 // O Claude Code conecta como cliente, chama `observe`/`tap`/`type_text`/... e
 // recebe de volta a árvore de a11y (texto) + screenshot (imagem) pra "ver" a tela.
 //
-// Config via env: SCOUT_UDID, SCOUT_BUNDLE_ID, SCOUT_APP_PATH (opcional).
+// Config via env: IOSCTL_UDID, IOSCTL_BUNDLE_ID, IOSCTL_APP_PATH (opcional).
 
 let session = DriverSession()
 
 let server = Server(
-    name: "scout",
+    name: "ios-controller",
     version: "0.1.0",
     capabilities: .init(tools: .init(listChanged: false))
 )

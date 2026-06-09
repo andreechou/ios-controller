@@ -1,6 +1,6 @@
-name: Scout
+name: IOSController
 options:
-  bundleIdPrefix: md.chou.scout
+  bundleIdPrefix: md.chou.ioscontroller
   deploymentTarget:
     macOS: "14.0"
   createIntermediateGroups: true
@@ -20,77 +20,78 @@ packages:
 targets:
   # Lógica compartilhada entre app e CLI. Sem dependência de UI.
   # Static lib: sem bundle aninhado pra assinar (app/cli/mcp/tests só linkam).
-  ScoutCore:
+  IOSControllerCore:
     type: library.static
     platform: macOS
     sources:
-      - Sources/ScoutCore
+      - Sources/IOSControllerCore
 
   # App nativo (SwiftUI/AppKit) — janela com simulador + feed de steps.
-  Scout:
+  IOSController:
     type: application
     platform: macOS
     sources:
-      - Sources/ScoutApp
+      - Sources/IOSControllerApp
     dependencies:
-      - target: ScoutCore
+      - target: IOSControllerCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: md.chou.scout.app
+        PRODUCT_BUNDLE_IDENTIFIER: md.chou.ioscontroller.app
+        INFOPLIST_KEY_CFBundleDisplayName: iOS Controller
         INFOPLIST_KEY_NSHumanReadableCopyright: ""
         ENABLE_HARDENED_RUNTIME: YES
     info:
-      path: Sources/ScoutApp/Info.plist
+      path: Sources/IOSControllerApp/Info.plist
       properties:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true # WDA em localhost
         LSMinimumSystemVersion: "14.0"
 
-  # Binário headless que compartilha ScoutCore — pra rodar em CI/Claude Code.
-  scout-cli:
+  # Binário headless que compartilha IOSControllerCore — pra rodar em CI/Claude Code.
+  ios-controller-cli:
     type: tool
     platform: macOS
     sources:
-      - Sources/scout-cli
+      - Sources/ios-controller-cli
     dependencies:
-      - target: ScoutCore
+      - target: IOSControllerCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: md.chou.scout.cli
+        PRODUCT_BUNDLE_IDENTIFIER: md.chou.ioscontroller.cli
 
   # Servidor MCP (stdio) — expõe o SimulatorDriver como tools pro Claude Code.
-  scout-mcp:
+  ios-controller-mcp:
     type: tool
     platform: macOS
     sources:
-      - Sources/scout-mcp
+      - Sources/ios-controller-mcp
     dependencies:
-      - target: ScoutCore
+      - target: IOSControllerCore
       - package: MCP
         product: MCP
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: md.chou.scout.mcp
+        PRODUCT_BUNDLE_IDENTIFIER: md.chou.ioscontroller.mcp
 
-  ScoutCoreTests:
+  IOSControllerCoreTests:
     type: bundle.unit-test
     platform: macOS
     sources:
-      - Tests/ScoutCoreTests
+      - Tests/IOSControllerCoreTests
     dependencies:
-      - target: ScoutCore
+      - target: IOSControllerCore
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES
 
 schemes:
-  Scout:
+  IOSController:
     build:
       targets:
-        Scout: all
-        scout-cli: all
+        IOSController: all
+        ios-controller-cli: all
     run:
       config: Debug
     test:
       targets:
-        - ScoutCoreTests
+        - IOSControllerCoreTests
