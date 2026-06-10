@@ -11,29 +11,29 @@ enum Tools {
              description: "Captura o estado atual da tela: árvore de acessibilidade (texto) + screenshot (imagem). Chame antes de decidir a próxima ação.",
              inputSchema: ["type": "object", "properties": [:]]),
         Tool(name: "tap",
-             description: "Toca numa coordenada em pontos (origem no topo-esquerda).",
+             description: "Toca numa coordenada em pontos (origem no topo-esquerda). Devolve só o resultado — chame observe quando precisar ver a tela.",
              inputSchema: ["type": "object",
                            "properties": ["x": ["type": "number"], "y": ["type": "number"]],
                            "required": ["x", "y"]]),
         Tool(name: "tap_element",
-             description: "Toca num elemento pelo id da árvore de a11y (visto em observe).",
+             description: "Toca num elemento pelo id da árvore de a11y (visto em observe). Devolve só o resultado — chame observe quando precisar ver a tela.",
              inputSchema: ["type": "object",
                            "properties": ["id": ["type": "string"]],
                            "required": ["id"]]),
         Tool(name: "type_text",
-             description: "Digita texto no campo focado.",
+             description: "Digita texto no campo focado. Devolve só o resultado — chame observe quando precisar ver a tela.",
              inputSchema: ["type": "object",
                            "properties": ["text": ["type": "string"]],
                            "required": ["text"]]),
         Tool(name: "scroll",
-             description: "Faz scroll direcional.",
+             description: "Faz scroll direcional. Devolve só o resultado — chame observe quando precisar ver a tela.",
              inputSchema: ["type": "object",
                            "properties": ["direction": ["type": "string",
                                           "enum": ["up", "down", "left", "right"]],
                                           "amount": ["type": "number"]],
                            "required": ["direction"]]),
         Tool(name: "launch",
-             description: "(Re)abre um bundle id no simulador.",
+             description: "(Re)abre um bundle id no simulador. Devolve só o resultado — chame observe quando precisar ver a tela.",
              inputSchema: ["type": "object",
                            "properties": ["bundle_id": ["type": "string"]],
                            "required": ["bundle_id"]]),
@@ -81,13 +81,13 @@ enum Tools {
         }
     }
 
-    /// Executa a ação e, por conveniência do agente, devolve a nova observação.
+    /// Executa a ação e devolve só o resultado. Observação é explícita (tool
+    /// `observe`): screenshot+a11y a cada ação inflava o contexto do cliente à toa.
     private static func act(_ action: Action, _ session: DriverSession) async throws -> [Tool.Content] {
         let outcome = try await session.perform(action)
-        let obs = try await session.observe()
-        var content: [Tool.Content] = [.text("ação: \(action) → ok=\(outcome.ok)")]
-        content.append(contentsOf: observationContent(obs))
-        return content
+        var text = "ação: \(action) → ok=\(outcome.ok)"
+        if let detail = outcome.detail, !detail.isEmpty { text += " (\(detail))" }
+        return [.text(text)]
     }
 
     /// Converte uma ScreenObservation em conteúdo MCP: a11y como texto, tela como imagem.

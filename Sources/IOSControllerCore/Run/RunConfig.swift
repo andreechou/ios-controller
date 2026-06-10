@@ -16,7 +16,7 @@ public struct RunConfig: Sendable {
 
     public init(goal: String, persona: String, udid: String, bundleId: String,
                 appPath: String? = nil, provider: ProviderID, model: String,
-                maxSteps: Int = 40, maxTokens: Int = 200_000, imageEveryNSteps: Int = 1) {
+                maxSteps: Int = 40, maxTokens: Int = 200_000, imageEveryNSteps: Int = 3) {
         self.goal = goal; self.persona = persona; self.udid = udid
         self.bundleId = bundleId; self.appPath = appPath
         self.provider = provider; self.model = model
