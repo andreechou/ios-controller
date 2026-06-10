@@ -4,6 +4,11 @@
 set -euo pipefail
 
 UDID="${IOSCTL_UDID:-booted}"
+# xcodebuild não entende "booted" (só o simctl entende) — resolve pro UDID real.
+if [ "$UDID" = "booted" ]; then
+  UDID=$(xcrun simctl list devices booted | grep -oE '[0-9A-F]{8}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{4}-[0-9A-F]{12}' | head -1)
+  [ -z "$UDID" ] && { echo "✗ nenhum simulador bootado (rode: xcrun simctl boot <udid>)" >&2; exit 1; }
+fi
 WDA_DIR="vendor/WebDriverAgent"
 
 echo "→ subindo WebDriverAgentRunner no simulador $UDID …"
