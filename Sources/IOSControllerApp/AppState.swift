@@ -11,6 +11,7 @@ final class AppState {
         let reasoning: String
         let action: String?
         let ok: Bool?
+        var imagePath: String? = nil
     }
 
     var phase: RunState.Phase = .idle
@@ -21,7 +22,79 @@ final class AppState {
     var screenshot: Data?
     var isRunning: Bool { phase == .preparing || phase == .running }
 
+    // Saúde do cockpit: WDA no ar? qual sim? qual bundle na sessão externa?
+    var wdaUp: Bool?
+    var simName: String?
+    var sessionBundle: String?
+    var wdaStarting = false
+
+    /// Diretório do projeto — cwd do terminal e raiz do start-wda.sh.
+    /// Override: defaults write md.chou.ioscontroller.app projectDir <path>.
+    static var projectDir: String {
+        UserDefaults.standard.string(forKey: "projectDir")
+            ?? ProcessInfo.processInfo.environment["IOSCTL_PROJECT_DIR"]
+            ?? NSHomeDirectory() + "/Projects/ios-controller"
+    }
+
     @ObservationIgnored private var previewTask: Task<Void, Never>?
+    @ObservationIgnored private var statusTask: Task<Void, Never>?
+
+    /// Vigia o WDA (:8100) a cada 3s e o nome do sim bootado a cada ~30s.
+    func startStatusPolls() {
+        statusTask?.cancel()
+        statusTask = Task { [weak self] in
+            var tick = 0
+            while !Task.isCancelled {
+                let up = await Self.probeWDA()
+                let name = tick % 10 == 0 ? await Self.bootedSimName() : nil
+                guard let self, !Task.isCancelled else { break }
+                self.wdaUp = up
+                if up { self.wdaStarting = false }
+                if let name { self.simName = name }
+                tick += 1
+                try? await Task.sleep(nanoseconds: 3_000_000_000)
+            }
+        }
+    }
+
+    /// Sobe o WDA via scripts/start-wda.sh (fire-and-forget; o poll vira o ●).
+    func startWDA() {
+        guard !wdaStarting else { return }
+        wdaStarting = true
+        let p = Process()
+        p.executableURL = URL(fileURLWithPath: "/bin/zsh")
+        p.arguments = ["-lc", "cd \(Self.projectDir) && exec ./scripts/start-wda.sh >/tmp/wda-start.log 2>&1"]
+        do { try p.run() } catch {
+            wdaStarting = false
+            friction.append("start-wda falhou: \(error.localizedDescription)")
+        }
+    }
+
+    nonisolated private static func probeWDA() async -> Bool {
+        var req = URLRequest(url: URL(string: "http://127.0.0.1:8100/status")!)
+        req.timeoutInterval = 2
+        return (try? await URLSession.shared.data(for: req)) != nil
+    }
+
+    /// Nome do primeiro simulador bootado ("iPhone 17"). Parse do simctl.
+    nonisolated private static func bootedSimName() async -> String? {
+        await Task.detached {
+            let p = Process()
+            p.executableURL = URL(fileURLWithPath: "/usr/bin/xcrun")
+            p.arguments = ["simctl", "list", "devices", "booted"]
+            let pipe = Pipe()
+            p.standardOutput = pipe
+            try? p.run()
+            p.waitUntilExit()
+            let out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+            for line in out.split(separator: "\n") where line.contains("(Booted)") {
+                if let parenIdx = line.firstIndex(of: "(") {
+                    return line[..<parenIdx].trimmingCharacters(in: .whitespaces)
+                }
+            }
+            return nil
+        }.value
+    }
 
     /// Espelha o simulador no pane: tira screenshot via simctl em loop (~1.5 fps).
     /// Independe do WDA — funciona ocioso e durante um run.
@@ -29,10 +102,15 @@ final class AppState {
         guard !udid.isEmpty else { return }
         stopPreview()
         previewTask = Task { [weak self] in
+            var lastHash: Int?
             while !Task.isCancelled {
                 let data = await Task.detached { try? Simctl().screenshotPNG(udid: udid) }.value
                 guard let self, !Task.isCancelled else { break }
-                if let data { self.screenshot = data }
+                // Tela parada → frame idêntico → não republica (evita re-render à toa).
+                if let data, data.hashValue != lastHash {
+                    lastHash = data.hashValue
+                    self.screenshot = data
+                }
                 try? await Task.sleep(nanoseconds: 650_000_000)
             }
         }
@@ -59,11 +137,18 @@ final class AppState {
                           let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
                     else { continue }
                     let text = obj["text"] as? String ?? ""
-                    if (obj["kind"] as? String) == "friction" {
+                    let kind = obj["kind"] as? String
+                    if kind == "session" {
+                        // "▶ session <bundle>" abre, "■ close" fecha.
+                        self.sessionBundle = text.hasPrefix("▶ session ")
+                            ? String(text.dropFirst("▶ session ".count)) : nil
+                    }
+                    if kind == "friction" {
                         self.friction.append(text)
                     } else if !text.isEmpty {
                         self.steps.append(.init(index: self.steps.count, reasoning: text,
-                                                action: nil, ok: obj["ok"] as? Bool))
+                                                action: nil, ok: obj["ok"] as? Bool,
+                                                imagePath: obj["img"] as? String))
                     }
                 }
                 try? await Task.sleep(nanoseconds: 400_000_000)

@@ -16,6 +16,9 @@ packages:
   MCP:
     url: https://github.com/modelcontextprotocol/swift-sdk
     from: "0.11.0"
+  SwiftTerm:
+    url: https://github.com/migueldeicaza/SwiftTerm
+    from: "1.2.0"
 
 targets:
   # Lógica compartilhada entre app e CLI. Sem dependência de UI.
@@ -34,6 +37,8 @@ targets:
       - Sources/IOSControllerApp
     dependencies:
       - target: IOSControllerCore
+      - package: SwiftTerm
+        product: SwiftTerm
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: md.chou.ioscontroller.app
@@ -79,6 +84,8 @@ targets:
     platform: macOS
     sources:
       - Tests/IOSControllerCoreTests
+      # Política de layout do app é pura (sem SwiftUI) — testável aqui.
+      - Sources/IOSControllerApp/AdaptiveLayout.swift
     dependencies:
       - target: IOSControllerCore
     settings:
