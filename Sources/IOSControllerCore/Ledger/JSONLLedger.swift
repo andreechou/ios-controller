@@ -19,15 +19,25 @@ public actor JSONLLedger: Ledger {
 
     public func append(_ entry: LedgerEntry) async {
         struct Envelope: Codable { let ts: Date; let entry: LedgerEntry }
-        guard let data = try? encoder.encode(Envelope(ts: Date(), entry: entry)) else { return }
-        var line = data
-        line.append(0x0A) // newline
+        // Trilha de auditoria não pode falhar em silêncio: qualquer erro de
+        // encode/open/write/fsync vai pro stderr com o path — visível no terminal/CI.
+        do {
+            var line = try encoder.encode(Envelope(ts: Date(), entry: entry))
+            line.append(0x0A) // newline
 
-        if handle == nil {
-            FileManager.default.createFile(atPath: url.path, contents: nil)
-            handle = try? FileHandle(forWritingTo: url)
+            if handle == nil {
+                if !FileManager.default.fileExists(atPath: url.path) {
+                    FileManager.default.createFile(atPath: url.path, contents: nil)
+                }
+                let h = try FileHandle(forWritingTo: url)
+                try h.seekToEnd()
+                handle = h
+            }
+            try handle?.write(contentsOf: line)
+            try handle?.synchronize()
+        } catch {
+            FileHandle.standardError.write(
+                Data("ledger: falha ao gravar em \(url.path): \(error)\n".utf8))
         }
-        try? handle?.write(contentsOf: line)
-        try? handle?.synchronize()
     }
 }

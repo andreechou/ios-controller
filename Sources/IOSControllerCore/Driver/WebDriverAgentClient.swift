@@ -4,7 +4,12 @@ import Foundation
 /// Endpoints podem variar levemente por versão do WDA — ajuste se necessário.
 public actor WebDriverAgentClient {
     private let baseURL: URL
-    private let session = URLSession(configuration: .ephemeral)
+    private let session: URLSession = {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 15   // WDA local: sem resposta em 15s = travado
+        config.timeoutIntervalForResource = 60
+        return URLSession(configuration: config)
+    }()
 
     public init(baseURL: URL) { self.baseURL = baseURL }
 
@@ -110,7 +115,8 @@ public actor WebDriverAgentClient {
         var comps = URLComponents(url: baseURL.appendingPathComponent(path),
                                   resolvingAgainstBaseURL: false)!
         if !query.isEmpty { comps.queryItems = query.map { .init(name: $0.key, value: $0.value) } }
-        return try await send(URLRequest(url: comps.url!))
+        // Leitura é idempotente: retry amplo (3 tentativas).
+        return try await send(URLRequest(url: comps.url!), attempts: 3, idempotent: true)
     }
 
     private func post(_ path: String, body: [String: Any]) async throws -> sending Any? {
@@ -118,23 +124,52 @@ public actor WebDriverAgentClient {
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
-        return try await send(req)
+        // Ação não é idempotente: retry só pra falha pré-conexão (nada chegou no WDA),
+        // senão um timeout no meio viraria tap/type duplicado.
+        return try await send(req, attempts: 2, idempotent: false)
     }
 
     private func delete(_ path: String) async throws -> sending Any? {
         var req = URLRequest(url: baseURL.appendingPathComponent(path))
         req.httpMethod = "DELETE"
-        return try await send(req)
+        return try await send(req, attempts: 2, idempotent: true)
     }
 
     /// Toda resposta WDA é `{ "value": ... }`. Devolve o conteúdo de `value`.
-    private func send(_ req: URLRequest) async throws -> sending Any? {
-        let (data, resp) = try await session.data(for: req)
-        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
-            let body = String(data: data, encoding: .utf8) ?? ""
-            throw DriverError.wdaUnavailable(reason: "HTTP \((resp as? HTTPURLResponse)?.statusCode ?? -1): \(body)")
+    /// Retry com backoff (250ms × tentativa) só pra erros de transporte; HTTP != 2xx
+    /// não re-tenta (o servidor respondeu — repetir não muda nada).
+    private func send(_ req: URLRequest, attempts: Int = 1,
+                      idempotent: Bool = true) async throws -> sending Any? {
+        var lastError: Error?
+        for attempt in 1...max(1, attempts) {
+            do {
+                let (data, resp) = try await session.data(for: req)
+                guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                    let body = String(data: data, encoding: .utf8) ?? ""
+                    throw DriverError.wdaUnavailable(reason: "HTTP \((resp as? HTTPURLResponse)?.statusCode ?? -1): \(body)")
+                }
+                let json = try JSONSerialization.jsonObject(with: data)
+                return (json as? [String: Any])?["value"]
+            } catch let error as URLError where Self.isRetryable(error, idempotent: idempotent) {
+                lastError = error
+                if attempt < attempts {
+                    try? await Task.sleep(nanoseconds: UInt64(attempt) * 250_000_000)
+                }
+            }
         }
-        let json = try JSONSerialization.jsonObject(with: data)
-        return (json as? [String: Any])?["value"]
+        throw lastError ?? DriverError.wdaUnavailable(reason: "request falhou sem erro registrado")
+    }
+
+    /// Pré-conexão (connection refused, DNS): seguro re-tentar sempre — o request
+    /// nunca chegou. Timeout/conexão perdida: só pra leituras (idempotentes).
+    private static func isRetryable(_ error: URLError, idempotent: Bool) -> Bool {
+        switch error.code {
+        case .cannotConnectToHost, .cannotFindHost, .dnsLookupFailed:
+            return true
+        case .timedOut, .networkConnectionLost:
+            return idempotent
+        default:
+            return false
+        }
     }
 }
