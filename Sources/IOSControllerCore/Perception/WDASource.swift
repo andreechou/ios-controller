@@ -14,6 +14,9 @@ public enum WDASource {
     private static func walk(_ node: [String: Any], path: String,
                              into out: inout [AccessibilitySnapshot.Node]) {
         let role = shortRole(node["type"] as? String ?? "Other")
+        // Status bar fora da árvore: relógio/bateria mudam a cada minuto e
+        // viram tela "nova" falsa na ScreenSignature (e ruído pro agente).
+        if role == "StatusBar" { return }
         let label = (node["label"] as? String) ?? (node["name"] as? String)
         let value = node["value"].flatMap { "\($0)" }
         let enabled = boolish(node["isEnabled"])

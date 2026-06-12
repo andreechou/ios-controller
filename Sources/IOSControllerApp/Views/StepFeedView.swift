@@ -10,16 +10,14 @@ struct StepFeedView: View {
         Group {
             if state.steps.isEmpty && state.friction.isEmpty {
                 ContentUnavailableView {
-                    Label("No steps yet", systemImage: "list.bullet.rectangle")
+                    Label("Sem passos ainda", systemImage: "list.bullet.rectangle")
                 } description: {
-                    Text("Rode o claude no terminal — cada ação aparece aqui.")
+                    Text("Dirija o simulador (wda.sh / MCP / Claude) — cada ação aparece aqui.")
                 }
             } else {
                 feed
             }
         }
-        // Preenche a coluna ancorado no topo — sem isso o HStack centra o painel
-        // verticalmente e o conteúdo "flutua" no meio da janela.
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 

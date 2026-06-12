@@ -14,13 +14,18 @@ public struct AuditScreen: Sendable, Codable, Identifiable {
     public var id: String { signature }
     public var signature: String
     public var pathDescription: String   // como chegou aqui a partir do root
+    /// Caminho estruturado desde o root (um TapTarget por toque). Permite
+    /// montar a árvore de navegação: profundidade = path.count, aresta =
+    /// path.last, pai = tela cujo caminho é path.dropLast().
+    public var path: [TapTarget]
     public var screenshotPNG: Data
     public var nodeCount: Int
     public var issues: [A11yIssue]
 
-    public init(signature: String, pathDescription: String, screenshotPNG: Data,
-                nodeCount: Int, issues: [A11yIssue]) {
+    public init(signature: String, pathDescription: String, path: [TapTarget] = [],
+                screenshotPNG: Data, nodeCount: Int, issues: [A11yIssue]) {
         self.signature = signature; self.pathDescription = pathDescription
+        self.path = path
         self.screenshotPNG = screenshotPNG; self.nodeCount = nodeCount; self.issues = issues
     }
 }

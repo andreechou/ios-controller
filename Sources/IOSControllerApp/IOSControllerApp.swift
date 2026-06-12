@@ -3,18 +3,40 @@ import SwiftUI
 @main
 struct IOSControllerApp: App {
     @State private var state = AppState()
+    @State private var capture = CaptureController()
+    @State private var atlas = AtlasController()
 
     var body: some Scene {
-        WindowGroup {
-            RootView()
+        // Janela principal = palette flutuante (estilo RocketSim): fica acima
+        // das outras e cola na janela do Simulator. Sem espelho de tela.
+        Window("iOS Controller", id: "palette") {
+            PaletteView()
                 .environment(state)
-                // Piso = banda compact (só o simulador). A janela encolhe livre;
-                // quem garante que nada clipa é o AdaptiveLayout colapsando
-                // painéis por banda — não um mínimo duro somando os três.
-                .frame(minWidth: 320, minHeight: 480)
+                .environment(capture)
         }
-        .defaultSize(width: 1200, height: 800)
-        // Sem forçar aparência: segue light/dark e o accent do sistema.
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .windowLevel(.floating)
+        .windowBackgroundDragBehavior(.enabled)
+        .defaultPosition(.topTrailing)
+        .restorationBehavior(.disabled)
+
+        // Feed de passos dos drivers externos (wda.sh / MCP) — sob demanda.
+        Window("Steps", id: "steps") {
+            StepFeedView()
+                .environment(state)
+        }
+        .defaultSize(width: 380, height: 620)
+        .restorationBehavior(.disabled)
+
+        // Treeline de navegação: crawl ao vivo do app alvo.
+        Window("Atlas", id: "atlas") {
+            AtlasView()
+                .environment(atlas)
+                .environment(state)
+        }
+        .defaultSize(width: 1000, height: 720)
+        .restorationBehavior(.disabled)
 
         Settings {
             SettingsView()

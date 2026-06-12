@@ -59,6 +59,16 @@ public actor WebDriverAgentDriver: SimulatorDriver {
                            screenSize: screenSize)
     }
 
+    /// Só a árvore de a11y, sem screenshot — barato o bastante pra polling
+    /// (detectar mudança de tela por ScreenSignature sem pagar o PNG).
+    public func observeTree() async throws -> AccessibilitySnapshot {
+        guard let sid = sessionId else { throw DriverError.wdaUnavailable(reason: "sem sessão") }
+        let tree = try await wda.sourceJSON(session: sid)
+        let nodes = WDASource.parse(tree)
+        lastFrames = Dictionary(nodes.map { ($0.id, $0.frame) }, uniquingKeysWith: { a, _ in a })
+        return AccessibilitySnapshot(nodes: nodes)
+    }
+
     public func perform(_ action: Action) async throws -> ActionOutcome {
         guard let sid = sessionId else { throw DriverError.wdaUnavailable(reason: "sem sessão") }
         do {

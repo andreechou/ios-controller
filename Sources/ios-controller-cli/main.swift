@@ -71,9 +71,12 @@ case "audit":
                                maxScreens: Int(arg("max-screens") ?? "60") ?? 60,
                                maxDepth: Int(arg("max-depth") ?? "4") ?? 4)
     print("auditando \(bundle) …")
-    let result = try await crawler.crawl { screen in
+    let result = try await crawler.crawl(onScreen: { screen in
         print("  + \(screen.signature) (\(screen.issues.count) issues) — \(screen.pathDescription)")
-    }
+    }, onSkip: { path, reason in
+        // stderr: trilha de descartes pra depurar o BFS sem sujar o stdout
+        FileHandle.standardError.write(Data("  ~ \(path) — \(reason)\n".utf8))
+    })
     print("\n\(result.screens.count) telas, \(result.totalIssues) issues\(result.truncated ? " (truncado)" : "")")
     write(ReportRenderer.auditHTML(result), to: arg("out") ?? "ios-controller-audit.html")
 

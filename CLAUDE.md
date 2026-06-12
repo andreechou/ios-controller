@@ -5,6 +5,12 @@ rodar **testes de usuário** (não testes de UI scriptados): você escreve um
 objetivo em linguagem natural + uma persona, e o agente lê a tela, interage e
 reporta fricção de UX.
 
+O app (estilo RocketSim) é uma **palette flutuante** colada na janela real do
+Simulator — nada de espelhar tela. Ações rápidas: screenshot, gravação de vídeo,
+status/start do WDA. Janelas sob demanda: **Steps** (tail do
+`~/.ios-controller/feed.jsonl`) e **Atlas** (treeline de navegação ao vivo via
+`AuditCrawler`). O cérebro fica fora do app: Claude Code dirige via WDA/MCP.
+
 ## Arquitetura
 
 Três camadas, com `IOSControllerCore` compartilhado entre app e CLI:
@@ -43,7 +49,7 @@ xcodebuild -scheme ios-controller-cli -destination 'platform=macOS' build
 
 ## Modos de operação
 
-- **Loop interno** (`iOS Controller` app / `ios-controller-cli`): o cérebro é um modelo via API
+- **Loop interno** (`ios-controller-cli`): o cérebro é um modelo via API
   (`ModelProvider`). Autônomo, headless, bom pra CI.
 - **Servidor MCP** (`ios-controller-mcp`): o cérebro é o Claude Code. O iOS Controller expõe o
   `SimulatorDriver` como tools MCP (`observe`, `tap`, `type_text`, `scroll`,
@@ -81,7 +87,9 @@ Antes de qualquer comando, suba o WDA: `IOSCTL_UDID=<U> scripts/start-wda.sh`.
 ## TODO (prioridade)
 
 1. Loop de tool-result no modo loop interno: devolver `ActionOutcome` ao modelo.
-2. Captura da janela do Simulator no `SimulatorPaneView` (hoje é placeholder).
+2. Atlas: arestas desenhadas entre pai/filho (hoje a relação é por coluna +
+   label da ação) e export do mapa.
 3. Recuperação de telas atrás de gestos não-tap (swipe, long-press) no crawler.
 4. Assertions mais ricas no `Scenario` (ex: "tela final deve conter label X").
 5. Endpoints WDA podem variar por versão — validar tap/keys/drag no seu setup.
+6. Palette: seguir o Simulator por AX observer em vez de poll (hoje 800ms).

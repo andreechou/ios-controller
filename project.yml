@@ -2,7 +2,7 @@ name: IOSController
 options:
   bundleIdPrefix: md.chou.ioscontroller
   deploymentTarget:
-    macOS: "14.0"
+    macOS: "15.0"   # janela flutuante (windowLevel/.plain) é API do 15+
   createIntermediateGroups: true
 
 settings:
@@ -16,9 +16,6 @@ packages:
   MCP:
     url: https://github.com/modelcontextprotocol/swift-sdk
     from: "0.11.0"
-  SwiftTerm:
-    url: https://github.com/migueldeicaza/SwiftTerm
-    from: "1.2.0"
 
 targets:
   # Lógica compartilhada entre app e CLI. Sem dependência de UI.
@@ -29,7 +26,8 @@ targets:
     sources:
       - Sources/IOSControllerCore
 
-  # App nativo (SwiftUI/AppKit) — janela com simulador + feed de steps.
+  # App nativo (SwiftUI/AppKit) — palette flutuante ao lado do Simulator
+  # (estilo RocketSim) + janelas Steps e Atlas sob demanda.
   IOSController:
     type: application
     platform: macOS
@@ -37,8 +35,6 @@ targets:
       - Sources/IOSControllerApp
     dependencies:
       - target: IOSControllerCore
-      - package: SwiftTerm
-        product: SwiftTerm
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: md.chou.ioscontroller.app
@@ -51,7 +47,7 @@ targets:
         CFBundleName: iOS Controller
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true # WDA em localhost
-        LSMinimumSystemVersion: "14.0"
+        LSMinimumSystemVersion: "15.0"
 
   # Binário headless que compartilha IOSControllerCore — pra rodar em CI/Claude Code.
   ios-controller-cli:
@@ -84,8 +80,6 @@ targets:
     platform: macOS
     sources:
       - Tests/IOSControllerCoreTests
-      # Política de layout do app é pura (sem SwiftUI) — testável aqui.
-      - Sources/IOSControllerApp/AdaptiveLayout.swift
     dependencies:
       - target: IOSControllerCore
     settings:

@@ -1,7 +1,8 @@
 import SwiftUI
-import IOSControllerCore
 
-/// Estado observável da UI. Dispara um run e consome o AsyncStream de eventos.
+/// Estado observável compartilhado: saúde do WDA/simulador + feed de passos
+/// de drivers externos (wda.sh / MCP / curl). O app não espelha o simulador —
+/// a janela real do Simulator é a UI; a palette só flutua ao lado.
 @MainActor
 @Observable
 final class AppState {
@@ -14,21 +15,16 @@ final class AppState {
         var imagePath: String? = nil
     }
 
-    var phase: RunState.Phase = .idle
     var steps: [StepRow] = []
     var friction: [String] = []
-    var outcome: AgentDecision.Status?
-    /// Último frame do simulador (PNG), atualizado pelo preview ao vivo.
-    var screenshot: Data?
-    var isRunning: Bool { phase == .preparing || phase == .running }
 
-    // Saúde do cockpit: WDA no ar? qual sim? qual bundle na sessão externa?
+    // Saúde: WDA no ar? qual sim? qual bundle na sessão externa?
     var wdaUp: Bool?
     var simName: String?
     var sessionBundle: String?
     var wdaStarting = false
 
-    /// Diretório do projeto — cwd do terminal e raiz do start-wda.sh.
+    /// Diretório do projeto — raiz do start-wda.sh.
     /// Override: defaults write md.chou.ioscontroller.app projectDir <path>.
     static var projectDir: String {
         UserDefaults.standard.string(forKey: "projectDir")
@@ -36,12 +32,11 @@ final class AppState {
             ?? NSHomeDirectory() + "/Projects/ios-controller"
     }
 
-    @ObservationIgnored private var previewTask: Task<Void, Never>?
     @ObservationIgnored private var statusTask: Task<Void, Never>?
 
     /// Vigia o WDA (:8100) a cada 3s e o nome do sim bootado a cada ~30s.
     func startStatusPolls() {
-        statusTask?.cancel()
+        guard statusTask == nil else { return }
         statusTask = Task { [weak self] in
             var tick = 0
             while !Task.isCancelled {
@@ -96,35 +91,13 @@ final class AppState {
         }.value
     }
 
-    /// Espelha o simulador no pane: tira screenshot via simctl em loop (~1.5 fps).
-    /// Independe do WDA — funciona ocioso e durante um run.
-    func startPreview(udid: String) {
-        guard !udid.isEmpty else { return }
-        stopPreview()
-        previewTask = Task { [weak self] in
-            var lastHash: Int?
-            while !Task.isCancelled {
-                let data = await Task.detached { try? Simctl().screenshotPNG(udid: udid) }.value
-                guard let self, !Task.isCancelled else { break }
-                // Tela parada → frame idêntico → não republica (evita re-render à toa).
-                if let data, data.hashValue != lastHash {
-                    lastHash = data.hashValue
-                    self.screenshot = data
-                }
-                try? await Task.sleep(nanoseconds: 650_000_000)
-            }
-        }
-    }
-
-    func stopPreview() { previewTask?.cancel(); previewTask = nil }
-
     @ObservationIgnored private var feedTask: Task<Void, Never>?
 
     /// Espelha no feed os passos de QUALQUER driver externo (wda.sh / curl / MCP)
     /// que escreva em ~/.ios-controller/feed.jsonl — uma linha JSON por ação. Começa no fim
     /// do arquivo (só passos novos); detecta truncamento (nova sessão) e reseta.
     func startFeedTail() {
-        feedTask?.cancel()
+        guard feedTask == nil else { return }
         let path = NSHomeDirectory() + "/.ios-controller/feed.jsonl"
         feedTask = Task { [weak self] in
             var offset: UInt64 = Self.fileSize(path)
@@ -172,49 +145,5 @@ final class AppState {
         let lines = (String(data: data, encoding: .utf8) ?? "")
             .split(separator: "\n").map(String.init).filter { !$0.isEmpty }
         return (lines, end)
-    }
-
-    func start(config: RunConfig, apiKey: String = "") {
-        steps = []; friction = []; outcome = nil
-        startPreview(udid: config.udid)
-        Task {
-            do {
-                // Key da UI (Keychain) tem prioridade; vazia → cai pro ambiente.
-                var env = ProcessInfo.processInfo.environment
-                if !apiKey.isEmpty { env[ProviderRegistry.envVar(for: config.provider)] = apiKey }
-                let registry = ProviderRegistry(env: env)
-                let provider = try registry.provider(for: config.provider)
-                let agent = Agent(provider: provider, model: config.model,
-                                  goal: config.goal, persona: config.persona,
-                                  imageEveryNSteps: config.imageEveryNSteps)
-                let driver = WebDriverAgentDriver(
-                    config: .init(udid: config.udid, bundleId: config.bundleId, appPath: config.appPath))
-                let ledger = JSONLLedger()
-                let coordinator = RunCoordinator(driver: driver, agent: agent,
-                                                 ledger: ledger, config: config)
-
-                for await event in await coordinator.run() {
-                    apply(event)
-                }
-            } catch {
-                phase = .finished
-                friction.append("Setup error: \(error)")
-            }
-        }
-    }
-
-    private func apply(_ event: RunCoordinator.Event) {
-        switch event {
-        case .phaseChanged(let p):
-            phase = p
-        case .step(let index, let decision, let outcome):
-            steps.append(.init(index: index, reasoning: decision.reasoning,
-                               action: decision.action.map(String.init(describing:)),
-                               ok: outcome?.ok))
-        case .finished(let state):
-            phase = .finished
-            outcome = state.outcome
-            friction = state.friction
-        }
     }
 }

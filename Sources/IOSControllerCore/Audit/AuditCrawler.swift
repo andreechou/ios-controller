@@ -19,8 +19,14 @@ public struct AuditCrawler: Sendable {
         self.maxScreens = maxScreens; self.maxDepth = maxDepth
     }
 
-    public func crawl(onScreen: (@Sendable (AuditScreen) -> Void)? = nil) async throws -> AuditResult {
+    /// - Parameters:
+    ///   - onScreen: chamado a cada tela única capturada (streaming).
+    ///   - onSkip: chamado a cada caminho descartado (duplicata, alvo não
+    ///     resolvido ou erro transitório) com a razão — visibilidade do BFS.
+    public func crawl(onScreen: (@Sendable (AuditScreen) -> Void)? = nil,
+                      onSkip: (@Sendable (_ path: String, _ reason: String) -> Void)? = nil) async throws -> AuditResult {
         let started = Date()
+        defer { CrawlControl.clear() }   // heartbeat/flags não assombram o próximo crawl
         try await driver.prepare()
 
         var visited = Set<String>()
@@ -29,41 +35,75 @@ public struct AuditCrawler: Sendable {
         var truncated = false
 
         while !frontier.isEmpty {
+            if Task.isCancelled { truncated = true; break }   // Stop do chamador
+            if CrawlControl.consumeStop() { truncated = true; break }   // Stop externo (arquivo)
             if screens.count >= maxScreens { truncated = true; break }
+
+            // Pausa externa: dorme até a flag sumir, mantendo o heartbeat vivo.
+            var stopRequested = false
+            while CrawlControl.isPaused(), !stopRequested {
+                CrawlControl.publish(bundleId: bundleId, screens: screens.count,
+                                     queued: frontier.count, paused: true, startedAt: started)
+                if Task.isCancelled || CrawlControl.consumeStop() {
+                    stopRequested = true
+                } else {
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                }
+            }
+            if stopRequested { truncated = true; break }
+
+            CrawlControl.publish(bundleId: bundleId, screens: screens.count,
+                                 queued: frontier.count, paused: false, startedAt: started)
             let path = frontier.removeFirst()
 
-            // Reseta ao root e reproduz o caminho.
-            _ = try await driver.perform(.launch(bundleId: bundleId))
-            _ = try await driver.perform(.wait(ms: 800))
-            var obs = try await driver.observe()
+            // Reseta ao root e reproduz o caminho. `launch` sozinho não basta:
+            // num app já em foreground o /wda/apps/launch é no-op e o estado da
+            // tela anterior vaza pro replay — terminate primeiro garante o root.
+            // Erro transitório (timeout do WDA etc.) descarta só este caminho.
+            do {
+                _ = try? await driver.perform(.terminate(bundleId: bundleId))
+                _ = try await driver.perform(.launch(bundleId: bundleId))
+                _ = try await driver.perform(.wait(ms: 800))
+                var obs = try await driver.observe()
 
-            var broken = false
-            for target in path {
-                guard let (x, y) = resolve(target, obs.accessibility.nodes) else { broken = true; break }
-                _ = try await driver.perform(.tap(x: x, y: y))
-                _ = try await driver.perform(.wait(ms: 500))
-                obs = try await driver.observe()
-            }
-            if broken { continue }   // caminho não reproduzível — pula
-
-            let sig = ScreenSignature.of(obs.accessibility)
-            guard !visited.contains(sig) else { continue }
-            visited.insert(sig)
-
-            let screen = AuditScreen(
-                signature: sig,
-                pathDescription: describe(path),
-                screenshotPNG: obs.screenshotPNG,
-                nodeCount: obs.accessibility.nodes.count,
-                issues: A11yChecks.run(on: obs.accessibility))
-            screens.append(screen)
-            onScreen?(screen)
-
-            // Enfileira os filhos (cada elemento tocável vira um novo caminho).
-            if path.count < maxDepth {
-                for target in tappableTargets(obs.accessibility.nodes) {
-                    frontier.append(path + [target])
+                var broken = false
+                for target in path {
+                    guard let (x, y) = resolve(target, obs.accessibility.nodes) else { broken = true; break }
+                    _ = try await driver.perform(.tap(x: x, y: y))
+                    _ = try await driver.perform(.wait(ms: 500))
+                    obs = try await driver.observe()
                 }
+                if broken {
+                    onSkip?(describe(path), "alvo não resolvido no replay")
+                    continue
+                }
+
+                let sig = ScreenSignature.of(obs.accessibility)
+                guard !visited.contains(sig) else {
+                    onSkip?(describe(path), "duplicata de \(sig)")
+                    continue
+                }
+                visited.insert(sig)
+
+                let screen = AuditScreen(
+                    signature: sig,
+                    pathDescription: describe(path),
+                    path: path,
+                    screenshotPNG: obs.screenshotPNG,
+                    nodeCount: obs.accessibility.nodes.count,
+                    issues: A11yChecks.run(on: obs.accessibility))
+                screens.append(screen)
+                onScreen?(screen)
+
+                // Enfileira os filhos (cada elemento tocável vira um novo caminho).
+                if path.count < maxDepth {
+                    for target in tappableTargets(obs.accessibility.nodes) {
+                        frontier.append(path + [target])
+                    }
+                }
+            } catch {
+                onSkip?(describe(path), "erro: \(error)")
+                continue   // tela inalcançável nesta passada — segue o BFS
             }
         }
 
